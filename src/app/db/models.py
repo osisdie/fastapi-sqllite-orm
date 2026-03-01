@@ -19,10 +19,15 @@ class Item(Base):
 
 
 class Category(Base):
-    """Category with items (for N+1 demo)."""
+    """Category with items (for N+1 demo). Uses default lazy='select' - access triggers query."""
 
     __tablename__ = "categories"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     items: Mapped[list["Item"]] = relationship("Item", back_populates="category")
+
+    @property
+    def item_count(self) -> int:
+        """Triggers lazy load when accessed: SELECT * FROM items WHERE category_id=?."""
+        return len(self.items)

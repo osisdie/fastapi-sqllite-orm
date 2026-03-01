@@ -51,7 +51,9 @@ Visit: http://localhost:8000/docs
 | DELETE | `/api/v1/items/{id}` | Bearer | Delete item |
 | POST | `/api/v1/items/categories` | Bearer | Create category |
 | GET | `/api/v1/items/categories-with-items/eager` | Bearer | Categories+items (no N+1) |
-| GET | `/api/v1/items/categories-with-items/nplus1` | Bearer | Categories+items (N+1 demo) |
+| GET | `/api/v1/items/categories-with-items/implicit-pydantic` | Bearer | Implicit N+1: Pydantic serialization |
+| GET | `/api/v1/items/categories-with-items/implicit-property` | Bearer | Implicit N+1: property triggers lazy |
+| GET | `/api/v1/items/categories-with-items/implicit-listcomp` | Bearer | Implicit N+1: listcomp triggers lazy |
 | POST | `/api/v1/raw-items` | Bearer | Create item (raw SQL from file) |
 | GET | `/api/v1/raw-items` | Bearer | List items (raw SQL) |
 | GET | `/api/v1/raw-items/{id}` | Bearer | Get item (raw SQL) |
@@ -84,7 +86,7 @@ Visit: http://localhost:8000/docs
 
 ```bash
 uv run pytest tests/ -v
-# Benchmark N+1 vs eager: pytest tests/benchmark_nplus1.py -v --benchmark-only
+# Benchmark eager vs implicit N+1: pytest tests/benchmark_nplus1.py -v --benchmark-only
 ```
 
 ## Pre-commit
@@ -139,6 +141,6 @@ tests/
 ├── test_auth.py
 ├── test_sql_crud.py
 ├── test_cache_crud.py
-├── test_nplus1.py   # Eager vs N+1 comparison
+├── test_nplus1.py   # Eager vs implicit N+1 (Pydantic/property/listcomp)
 └── pydantic/question1.py
 ```

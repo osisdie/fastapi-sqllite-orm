@@ -42,3 +42,13 @@ class CategoryWithItemsResponse(BaseModel):
     items: list[ItemResponse]
 
     model_config = {"from_attributes": True}
+
+
+class CategoryWithCountResponse(BaseModel):
+    """Category with item_count (property triggers lazy load on .items)."""
+
+    id: int
+    name: str
+    item_count: int
+
+    model_config = {"from_attributes": True}

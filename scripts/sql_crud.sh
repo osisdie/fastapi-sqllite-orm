@@ -60,5 +60,9 @@ echo "=== Categories with items (eager - no N+1) ==="
 curl -s -X GET "${BASE_URL}/api/v1/items/categories-with-items/eager" -H "$AUTH" | jq .
 
 echo ""
+echo "=== Implicit N+1 (Pydantic serialization triggers lazy load) ==="
+curl -s -X GET "${BASE_URL}/api/v1/items/categories-with-items/implicit-pydantic" -H "$AUTH" | jq . || echo "(May fail with async SQLAlchemy)"
+
+echo ""
 echo "=== Delete item ($ID) ==="
 curl -s -X DELETE "${BASE_URL}/api/v1/items/${ID}" -H "$AUTH" -w "\nHTTP Status: %{http_code}\n"

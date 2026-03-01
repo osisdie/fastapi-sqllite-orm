@@ -1,15 +1,14 @@
 """SQL CRUD API with ORM (SQLite / in-memory via DI)."""
 
-
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy.orm.attributes import set_committed_value
 
 from app.db.models import Category, Item
 from app.db.session import DbSession
 from app.models.sql_crud import (
     CategoryCreate,
+    CategoryWithCountResponse,
     CategoryWithItemsResponse,
     ItemCreate,
     ItemResponse,
@@ -89,26 +88,45 @@ async def delete_item(item_id: int, db: DbSession) -> None:
     await db.delete(item)
 
 
-# --- N+1 demo endpoints ---
+# --- N+1 demo: eager (correct) vs implicit lazy (dangerous) ---
 
 
 @router.get("/categories-with-items/eager", response_model=list[CategoryWithItemsResponse])
 async def list_categories_eager(db: DbSession) -> list[Category]:
-    """List categories with items - NO N+1 (eager load via selectinload)."""
+    """NO N+1: Eager load via selectinload. 2 queries total."""
     result = await db.execute(
         select(Category).options(selectinload(Category.items)).order_by(Category.id)
     )
     return list(result.scalars().unique().all())
 
 
-@router.get("/categories-with-items/nplus1", response_model=list[CategoryWithItemsResponse])
-async def list_categories_nplus1(db: DbSession) -> list[Category]:
-    """List categories with items - CAUSES N+1 (explicit N queries in loop)."""
+# --- Implicit N+1 cases (no explicit loop, lazy load triggers elsewhere) ---
+
+
+@router.get("/categories-with-items/implicit-pydantic", response_model=list[CategoryWithItemsResponse])
+async def list_categories_implicit_pydantic(db: DbSession) -> list[Category]:
+    """IMPLICIT N+1: No loop. Pydantic serialization accesses category.items → lazy load per category."""
+    result = await db.execute(select(Category).order_by(Category.id))
+    return list(result.scalars().all())
+
+
+@router.get("/categories-with-items/implicit-property", response_model=list[CategoryWithCountResponse])
+async def list_categories_implicit_property(db: DbSession) -> list[Category]:
+    """IMPLICIT N+1: Property item_count accesses len(self.items) → lazy load per category."""
+    result = await db.execute(select(Category).order_by(Category.id))
+    return list(result.scalars().all())
+
+
+@router.get("/categories-with-items/implicit-listcomp", response_model=list[CategoryWithItemsResponse])
+async def list_categories_implicit_listcomp(db: DbSession):
+    """IMPLICIT N+1: List comprehension [i for i in c.items] triggers lazy load per category."""
     result = await db.execute(select(Category).order_by(Category.id))
     categories = list(result.scalars().all())
-    # Explicit N+1: 1 query for categories + N queries for items (simulates lazy load)
-    for cat in categories:
-        items_result = await db.execute(select(Item).where(Item.category_id == cat.id))
-        items = list(items_result.scalars().all())
-        set_committed_value(cat, "items", items)
-    return categories
+    return [
+        {
+            "id": c.id,
+            "name": c.name,
+            "items": [{"id": i.id, "name": i.name, "description": i.description} for i in c.items],
+        }
+        for c in categories
+    ]
