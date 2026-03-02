@@ -1,5 +1,6 @@
 """FastAPI application entry point."""
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI
@@ -12,6 +13,8 @@ from app.db.base import Base
 from app.db.session import _engine
 from app.exceptions import register_exception_handlers
 from app.middleware.jwt_auth import JWTAuthMiddleware
+from app.middleware.logging_middleware import LoggingMiddleware
+from app.middleware.timing_middleware import TimingMiddleware
 
 
 @asynccontextmanager
@@ -30,6 +33,7 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     """Create and configure FastAPI application."""
+    logging.getLogger("app").setLevel(logging.INFO)
     settings = get_settings()
     app = FastAPI(
         title=settings.app_name,
@@ -41,6 +45,8 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # Request → Logging → Timing → CORS → JWT → Handler (last added = outermost)
+    app.add_middleware(JWTAuthMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -48,7 +54,8 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    app.add_middleware(JWTAuthMiddleware)
+    app.add_middleware(TimingMiddleware)
+    app.add_middleware(LoggingMiddleware)
 
     register_exception_handlers(app)
 
