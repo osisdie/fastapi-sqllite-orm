@@ -1,22 +1,29 @@
-# python-test
+# FastAPI SQLite Demo
 
-FastAPI project with Pydantic validation, JWT auth, Swagger, versioning, and modern tooling.
+FastAPI template with SQLAlchemy & SQLModel ORM comparison, raw SQL, JWT auth, and N+1 query demos. Suitable for learning or as a starter for API projects.
 
 ## Features
 
 - **FastAPI** with health & hello APIs
-- **SQL ORM CRUD** (SQLite, in-memory via DI)
-- **Cache CRUD** (Redis-ready, in-memory via DI)
-- **lru_cache** with 5s TTL (cachetools TTLCache)
+- **SQL ORM CRUD** — SQLAlchemy and SQLModel side-by-side (same API, different tables)
+- **Raw SQL CRUD** — SQL from `.sql` files (no ORM)
+- **N+1 demo** — Eager vs implicit lazy load endpoints; see [docs/N_PLUS_ONE.md](docs/N_PLUS_ONE.md)
+- **pytest-benchmark** — Compare SQLAlchemy vs SQLModel performance
+- **Cache CRUD** — Redis-ready, in-memory via DI; `lru_cache` with 5s TTL (cachetools)
 - **Swagger UI** at `/docs`, ReDoc at `/redoc`
 - **API versioning** (`/api/v1/...`)
 - **Pydantic** models with field validation
-- **Global exception handler** for validation and app errors
 - **JWT** Bearer token auth + middleware (exempt: health, docs, auth/token)
-- **config.py** with Pydantic Settings (`.env` injection, `.env` stays gitignored)
-- **pytest** with parametrize
-- **pre-commit** (ruff, hooks)
-- **CI** for GitHub Actions and GitLab CI
+- **Middleware** — Logging, Timing (`X-Process-Time` header)
+- **Config** — Pydantic Settings (`.env` injection)
+- **Tests** — pytest, parametrize, pytest-asyncio
+- **Pre-commit** — ruff, hooks
+- **CI** — GitHub Actions and GitLab CI
+
+## Prerequisites
+
+- Python 3.12+
+- [uv](https://docs.astral.sh/uv/) (recommended) or pip
 
 ## Quick Start
 
@@ -124,6 +131,10 @@ src/app/
 ├── auth.py          # JWT create/verify
 ├── exceptions.py    # Global handlers
 ├── deps.py          # Cache DI (in-memory / Redis)
+├── middleware/
+│   ├── jwt_auth.py
+│   ├── logging_middleware.py
+│   └── timing_middleware.py
 ├── db/
 │   ├── session.py   # DB session (SQLite)
 │   ├── models.py    # Item, Category (raw_sql)
@@ -145,6 +156,8 @@ src/app/
     ├── hello.py
     ├── sql_crud.py
     └── cache_crud.py
+docs/
+└── N_PLUS_ONE.md    # N+1 query demo (zh-TW)
 scripts/
 ├── health_check.sh
 ├── sql_crud.sh

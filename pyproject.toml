@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "python-test"
 version = "0.1.0"
-description = "FastAPI project with Pydantic validation, JWT auth, and modern tooling"
+description = "FastAPI SQLite demo: SQLAlchemy vs SQLModel ORM, raw SQL, JWT auth, N+1 query demos"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
