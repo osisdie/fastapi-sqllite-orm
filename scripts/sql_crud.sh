@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # SQL CRUD API via curl (with payload)
 # Usage: ./scripts/sql_crud.sh [BASE_URL]
+# Uses SQLAlchemy ORM: /api/v1/sqlalchemy/items
 # Requires: JWT token (obtain via POST /api/v1/auth/token)
 
 set -e
@@ -16,8 +17,8 @@ if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
 fi
 AUTH="Authorization: Bearer $TOKEN"
 
-echo "=== Create item ==="
-CREATE=$(curl -s -X POST "${BASE_URL}/api/v1/items" \
+echo "=== Create item (SQLAlchemy ORM) ==="
+CREATE=$(curl -s -X POST "${BASE_URL}/api/v1/sqlalchemy/items" \
   -H "Content-Type: application/json" \
   -H "$AUTH" \
   -d '{"name": "Test Item", "description": "Created via curl"}')
@@ -26,22 +27,22 @@ ID=$(echo "$CREATE" | jq -r '.id')
 
 echo ""
 echo "=== List items ==="
-curl -s -X GET "${BASE_URL}/api/v1/items" -H "$AUTH" | jq .
+curl -s -X GET "${BASE_URL}/api/v1/sqlalchemy/items" -H "$AUTH" | jq .
 
 echo ""
 echo "=== Get item by ID ($ID) ==="
-curl -s -X GET "${BASE_URL}/api/v1/items/${ID}" -H "$AUTH" | jq .
+curl -s -X GET "${BASE_URL}/api/v1/sqlalchemy/items/${ID}" -H "$AUTH" | jq .
 
 echo ""
 echo "=== Update item ==="
-curl -s -X PATCH "${BASE_URL}/api/v1/items/${ID}" \
+curl -s -X PATCH "${BASE_URL}/api/v1/sqlalchemy/items/${ID}" \
   -H "Content-Type: application/json" \
   -H "$AUTH" \
   -d '{"name": "Updated Item", "description": "Patched via curl"}' | jq .
 
 echo ""
 echo "=== Create category (for N+1 demo) ==="
-CAT=$(curl -s -X POST "${BASE_URL}/api/v1/items/categories" \
+CAT=$(curl -s -X POST "${BASE_URL}/api/v1/sqlalchemy/items/categories" \
   -H "Content-Type: application/json" \
   -H "$AUTH" \
   -d '{"name": "Electronics"}')
@@ -50,19 +51,15 @@ CAT_ID=$(echo "$CAT" | jq -r '.id')
 
 echo ""
 echo "=== Create item with category_id ==="
-curl -s -X POST "${BASE_URL}/api/v1/items" \
+curl -s -X POST "${BASE_URL}/api/v1/sqlalchemy/items" \
   -H "Content-Type: application/json" \
   -H "$AUTH" \
   -d "{\"name\": \"Phone\", \"description\": \"Smartphone\", \"category_id\": ${CAT_ID}}" | jq .
 
 echo ""
 echo "=== Categories with items (eager - no N+1) ==="
-curl -s -X GET "${BASE_URL}/api/v1/items/categories-with-items/eager" -H "$AUTH" | jq .
-
-echo ""
-echo "=== Implicit N+1 (Pydantic serialization triggers lazy load) ==="
-curl -s -X GET "${BASE_URL}/api/v1/items/categories-with-items/implicit-pydantic" -H "$AUTH" | jq . || echo "(May fail with async SQLAlchemy)"
+curl -s -X GET "${BASE_URL}/api/v1/sqlalchemy/items/categories-with-items/eager" -H "$AUTH" | jq .
 
 echo ""
 echo "=== Delete item ($ID) ==="
-curl -s -X DELETE "${BASE_URL}/api/v1/items/${ID}" -H "$AUTH" -w "\nHTTP Status: %{http_code}\n"
+curl -s -X DELETE "${BASE_URL}/api/v1/sqlalchemy/items/${ID}" -H "$AUTH" -w "\nHTTP Status: %{http_code}\n"

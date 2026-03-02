@@ -19,10 +19,14 @@ def ensure_tables():
     import asyncio
 
     async def _create():
-        from app.db.models import Category, Item  # noqa: F401
+        from app.db.models import Category, Item  # noqa: F401 - raw_sql
+        from app.db.sqlalchemy.models import CategorySA, ItemSA  # noqa: F401
+        from app.db.sqlmodel.models import CategorySM, ItemSM  # noqa: F401
 
         async with _engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            from sqlmodel import SQLModel
+            await conn.run_sync(lambda c: SQLModel.metadata.create_all(bind=c))
 
     asyncio.run(_create())
     yield

@@ -6,7 +6,7 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
-from app.api.v1 import auth, cache_crud, health, hello, raw_sql_crud, sql_crud
+from app.api.v1 import auth, cache_crud, health, hello, raw_sql_crud, sqlalchemy_crud, sqlmodel_crud
 from app.config import get_settings
 from app.db.base import Base
 from app.db.session import _engine
@@ -17,11 +17,14 @@ from app.middleware.jwt_auth import JWTAuthMiddleware
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
-    # Ensure models are registered before create_all
-    from app.db.models import Category, Item  # noqa: F401 - register ORM models
+    from app.db.models import Category, Item  # noqa: F401 - raw_sql uses items
+    from app.db.sqlalchemy.models import CategorySA, ItemSA  # noqa: F401
+    from app.db.sqlmodel.models import CategorySM, ItemSM  # noqa: F401
 
     async with _engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        from sqlmodel import SQLModel
+        await conn.run_sync(lambda c: SQLModel.metadata.create_all(bind=c))
     yield
 
 
@@ -54,7 +57,8 @@ def create_app() -> FastAPI:
     v1.include_router(health.router)
     v1.include_router(hello.router)
     v1.include_router(auth.router)
-    v1.include_router(sql_crud.router)
+    v1.include_router(sqlalchemy_crud.router)
+    v1.include_router(sqlmodel_crud.router)
     v1.include_router(raw_sql_crud.router)
     v1.include_router(cache_crud.router)
     app.include_router(v1)

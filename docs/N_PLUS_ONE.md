@@ -30,7 +30,9 @@ SELECT * FROM item WHERE category_id = 3;
 **程式碼裡完全沒有寫 loop 查 DB，但還是 N+1。**
 👉 這是 production 最常見事故。
 
-**對應端點**：`GET /api/v1/items/categories-with-items/implicit-pydantic`
+**對應端點**：
+- SQLAlchemy: `GET /api/v1/sqlalchemy/items/categories-with-items/implicit-pydantic`
+- SQLModel: `GET /api/v1/sqlmodel/items/categories-with-items/implicit-pydantic`
 
 ---
 
@@ -52,7 +54,9 @@ for cat in categories:
 
 看起來只是算長度，實際上每個 category 都跑一次 `SELECT * FROM item WHERE category_id=?`。
 
-**對應端點**：`GET /api/v1/items/categories-with-items/implicit-property`
+**對應端點**：
+- SQLAlchemy: `GET /api/v1/sqlalchemy/items/categories-with-items/implicit-property`
+- SQLModel: `GET /api/v1/sqlmodel/items/categories-with-items/implicit-property`
 
 ---
 
@@ -70,7 +74,9 @@ data = [
 
 `c.items` 是 lazy load，結果還是 N+1。
 
-**對應端點**：`GET /api/v1/items/categories-with-items/implicit-listcomp`
+**對應端點**：
+- SQLAlchemy: `GET /api/v1/sqlalchemy/items/categories-with-items/implicit-listcomp`
+- SQLModel: `GET /api/v1/sqlmodel/items/categories-with-items/implicit-listcomp`
 
 ---
 
@@ -114,12 +120,14 @@ items = relationship("Item", lazy="selectin")
 
 ## 正確寫法（本專案）
 
-`GET /api/v1/items/categories-with-items/eager` 使用 `selectinload`，僅 2 次查詢。
+`GET /api/v1/sqlalchemy/items/categories-with-items/eager` 與 `GET /api/v1/sqlmodel/items/categories-with-items/eager` 使用 `selectinload`，僅 2 次查詢。
 
 ---
 
 ## 注意：Async SQLAlchemy
 
-本專案使用 async SQLAlchemy。Lazy load 在 async 情境下可能觸發 `MissingGreenlet`（尤其 TestClient）。
-隱含 N+1 端點主要作為**程式碼範例**，展示錯誤寫法。
-以 sync SQLAlchemy 或實際 uvicorn 執行時，才會完整呈現 N+1 行為。
+本專案使用 async SQLAlchemy。**Async SQLAlchemy 不支援 lazy loading**：存取未 eager load 的 relationship 會觸發 `MissingGreenlet`。
+
+- 改用 `httpx.AsyncClient` 無法解決：Pydantic 序列化為 sync，觸發 lazy load 時仍會失敗。
+- 正確做法：一律使用 `selectinload` 或 `joinedload` 做 eager load。
+- 隱含 N+1 端點主要作為**程式碼範例**，展示錯誤寫法；在 sync SQLAlchemy 或實際 uvicorn + 特定條件下才可能呈現 N+1 行為。

@@ -44,16 +44,26 @@ Visit: http://localhost:8000/docs
 | GET | `/api/v1/hello` | Bearer | Hello |
 | POST | `/api/v1/hello` | Bearer | Hello with body |
 | GET | `/api/v1/auth/me` | Bearer | Current user |
-| POST | `/api/v1/items` | Bearer | Create item (ORM) |
-| GET | `/api/v1/items` | Bearer | List items |
-| GET | `/api/v1/items/{id}` | Bearer | Get item |
-| PATCH | `/api/v1/items/{id}` | Bearer | Update item |
-| DELETE | `/api/v1/items/{id}` | Bearer | Delete item |
-| POST | `/api/v1/items/categories` | Bearer | Create category |
-| GET | `/api/v1/items/categories-with-items/eager` | Bearer | Categories+items (no N+1) |
-| GET | `/api/v1/items/categories-with-items/implicit-pydantic` | Bearer | Implicit N+1: Pydantic serialization |
-| GET | `/api/v1/items/categories-with-items/implicit-property` | Bearer | Implicit N+1: property triggers lazy |
-| GET | `/api/v1/items/categories-with-items/implicit-listcomp` | Bearer | Implicit N+1: listcomp triggers lazy |
+| POST | `/api/v1/sqlalchemy/items` | Bearer | Create item (SQLAlchemy ORM) |
+| GET | `/api/v1/sqlalchemy/items` | Bearer | List items (SQLAlchemy) |
+| GET | `/api/v1/sqlalchemy/items/{id}` | Bearer | Get item (SQLAlchemy) |
+| PATCH | `/api/v1/sqlalchemy/items/{id}` | Bearer | Update item (SQLAlchemy) |
+| DELETE | `/api/v1/sqlalchemy/items/{id}` | Bearer | Delete item (SQLAlchemy) |
+| POST | `/api/v1/sqlalchemy/items/categories` | Bearer | Create category (SQLAlchemy) |
+| GET | `/api/v1/sqlalchemy/items/categories-with-items/eager` | Bearer | Categories+items (SQLAlchemy, no N+1) |
+| GET | `/api/v1/sqlalchemy/items/categories-with-items/implicit-pydantic` | Bearer | Implicit N+1: Pydantic (SQLAlchemy) |
+| GET | `/api/v1/sqlalchemy/items/categories-with-items/implicit-property` | Bearer | Implicit N+1: property (SQLAlchemy) |
+| GET | `/api/v1/sqlalchemy/items/categories-with-items/implicit-listcomp` | Bearer | Implicit N+1: listcomp (SQLAlchemy) |
+| POST | `/api/v1/sqlmodel/items` | Bearer | Create item (SQLModel ORM) |
+| GET | `/api/v1/sqlmodel/items` | Bearer | List items (SQLModel) |
+| GET | `/api/v1/sqlmodel/items/{id}` | Bearer | Get item (SQLModel) |
+| PATCH | `/api/v1/sqlmodel/items/{id}` | Bearer | Update item (SQLModel) |
+| DELETE | `/api/v1/sqlmodel/items/{id}` | Bearer | Delete item (SQLModel) |
+| POST | `/api/v1/sqlmodel/items/categories` | Bearer | Create category (SQLModel) |
+| GET | `/api/v1/sqlmodel/items/categories-with-items/eager` | Bearer | Categories+items (SQLModel, no N+1) |
+| GET | `/api/v1/sqlmodel/items/categories-with-items/implicit-pydantic` | Bearer | Implicit N+1: Pydantic (SQLModel) |
+| GET | `/api/v1/sqlmodel/items/categories-with-items/implicit-property` | Bearer | Implicit N+1: property (SQLModel) |
+| GET | `/api/v1/sqlmodel/items/categories-with-items/implicit-listcomp` | Bearer | Implicit N+1: listcomp (SQLModel) |
 | POST | `/api/v1/raw-items` | Bearer | Create item (raw SQL from file) |
 | GET | `/api/v1/raw-items` | Bearer | List items (raw SQL) |
 | GET | `/api/v1/raw-items/{id}` | Bearer | Get item (raw SQL) |
@@ -86,7 +96,8 @@ Visit: http://localhost:8000/docs
 
 ```bash
 uv run pytest tests/ -v
-# Benchmark eager vs implicit N+1: pytest tests/benchmark_nplus1.py -v --benchmark-only
+# Benchmark eager load: pytest tests/benchmark_nplus1.py -v --benchmark-only
+# Benchmark SQLAlchemy vs SQLModel: pytest tests/benchmark_orm_sa_vs_sm.py -v --benchmark-only
 ```
 
 ## Pre-commit
@@ -115,7 +126,9 @@ src/app/
 ├── deps.py          # Cache DI (in-memory / Redis)
 ├── db/
 │   ├── session.py   # DB session (SQLite)
-│   ├── models.py    # Item, Category ORM
+│   ├── models.py    # Item, Category (raw_sql)
+│   ├── sqlalchemy/  # SQLAlchemy ORM (ItemSA, CategorySA)
+│   ├── sqlmodel/    # SQLModel ORM (ItemSM, CategorySM)
 │   └── base.py
 ├── cache/
 │   └── backend.py  # InMemoryCacheBackend (Redis-ready)
@@ -123,7 +136,9 @@ src/app/
 │   ├── health.py
 │   ├── hello.py
 │   ├── auth.py
-│   ├── sql_crud.py
+│   ├── sqlalchemy_crud.py
+│   ├── sqlmodel_crud.py
+│   ├── raw_sql_crud.py
 │   └── cache_crud.py
 └── models/
     ├── health.py
@@ -133,6 +148,7 @@ src/app/
 scripts/
 ├── health_check.sh
 ├── sql_crud.sh
+├── raw_sql_crud.sh
 └── cache_crud.sh
 tests/
 ├── conftest.py
@@ -141,6 +157,8 @@ tests/
 ├── test_auth.py
 ├── test_sql_crud.py
 ├── test_cache_crud.py
-├── test_nplus1.py   # Eager vs implicit N+1 (Pydantic/property/listcomp)
+├── test_nplus1.py            # Eager load (no N+1)
+├── benchmark_nplus1.py       # Benchmark eager
+├── benchmark_orm_sa_vs_sm.py # Benchmark SQLAlchemy vs SQLModel
 └── pydantic/question1.py
 ```
